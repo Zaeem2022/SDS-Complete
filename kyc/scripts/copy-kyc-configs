@@ -1,0 +1,11 @@
+#!/bin/bash
+
+mkdir -p /opt/seamless/conf/kyc/actions_groovy
+mkdir -p /opt/seamless/conf/kyc/templates
+mkdir -p /opt/seamless/conf/kyc/notification
+
+cp /ers-common-config/* /opt/seamless/conf/
+cp /kyc-config/* /opt/seamless/conf/kyc/
+cp /kyc-config-templates/* /opt/seamless/conf/kyc/templates/
+cp /kyc-config-actions-groovy/* /opt/seamless/conf/kyc/actions_groovy
+cp /kyc-config-notification/* /opt/seamless/conf/kyc/notification

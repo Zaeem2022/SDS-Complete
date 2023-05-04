@@ -1,0 +1,118 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ers-kyc
+  namespace: ers
+  labels:
+    app: ers-kyc
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ers-kyc
+  template:
+    metadata:
+      labels:
+        app: ers-kyc
+    spec:
+      initContainers:
+        - name: copy-configs
+          image: centos
+          command: ['bash','/scripts/copy-kyc-configs']
+          volumeMounts:
+            - mountPath: /opt/seamless/conf
+              name: ers-config-path
+            - mountPath: /ers-common-config
+              name: vol-common-conf
+            - mountPath: /kyc-config
+              name: vol-conf
+            - mountPath: /kyc-config-templates
+              name: vol-conf-template
+            - mountPath: /scripts
+              name: copy-kyc-configs
+            - mountPath: /kyc-config-actions-groovy
+              name: kyc-config-actions-groovy
+            - mountPath: /kyc-config-notification
+              name: kyc-config-notification
+#      hostAliases:
+#        - ip: "10.91.7.251"
+#          hostnames:
+#          - "std-k8-master01"
+#        - ip: "10.91.7.248"
+#          hostnames:
+#          - "std-k8-worker01"
+#        - ip: "10.91.7.250"
+#          hostnames:
+#          - "std-k8-worker02"
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: kubernetes.io/hostname
+                operator: In
+                values:
+                - k1.unified-portal-automation
+                - k2.unified-portal-automation
+                - k3.unified-portal-automation
+
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app
+                operator: In
+                values:
+                - ers-kyc
+            topologyKey: kubernetes.io/hostname
+      containers:
+        - name: ers-kyc
+#         image: docker.dev.ts:5000/ers/ers-kycsystem:1.38.0
+#         image: sdsdockerhub/ers-kycsystem:1.44.0
+          image: sdsdockerhub/ers-kycsystem:1.51.0
+          imagePullPolicy: IfNotPresent
+#          resources:
+#            limits:
+#              cpu: '0.4'
+#              memory: 600Mi
+#            requests:
+#              cpu: '0.2'
+#              memory: 300Mi
+          ports:
+            - containerPort: 8297
+          volumeMounts:
+            - mountPath: /opt/seamless/conf
+              name: ers-config-path
+            - mountPath: /var/seamless/log/kyc
+              name: vol-log
+            - name: tz-oman
+              mountPath: /etc/localtime
+      volumes:
+        - name: tz-oman
+          hostPath:
+            path: /usr/share/zoneinfo/Asia/Muscat
+        - name: vol-common-conf
+          configMap:
+            name: ers-common-config
+        - name: vol-conf
+          configMap:
+            name: kyc-config
+        - name: copy-kyc-configs
+          configMap:
+            name: copy-kyc-configs
+        - name: vol-conf-template
+          configMap:
+            name: kyc-config-templates
+        - name: kyc-config-actions-groovy
+          configMap:
+            name: kyc-config-actions-groovy
+        - name: kyc-config-notification
+          configMap:
+            name: kyc-config-notification
+        - name: vol-log
+          persistentVolumeClaim:
+            claimName: kyc-log
+        - name: ers-config-path
+          emptyDir: {}
+      imagePullSecrets:
+        - name: private-repo
